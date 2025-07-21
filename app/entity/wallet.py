@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from uuid import UUID
 
 
 @dataclass
 class Wallet:
     """Кошелек с балансом."""
 
-    uuid: str
+    uuid: UUID
     balance: int = 0
 
     def deposit(self, amount: int):

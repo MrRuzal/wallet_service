@@ -5,28 +5,14 @@ from uuid import UUID
 from app.infrastructure.wallet_repository import SqlAlchemyWalletRepository
 from app.infrastructure.database import async_session
 
-from app.common.logs import logger
-
 router = APIRouter()
 
-
-def get_wallet_service() -> WalletService:
-    repository = SqlAlchemyWalletRepository(async_session)
-    return WalletService(repository)
+repository = SqlAlchemyWalletRepository()
+service = WalletService(repository, async_session)
 
 
 @router.post("/wallets/{wallet_id}/operation", response_model=WalletBalance)
-async def operate_wallet(
-    wallet_id: UUID,
-    operation: WalletOperation,
-    service: WalletService = Depends(get_wallet_service),
-):
-    logger.info(
-        "Processing operation: type='%s', wallet_id='%s', amount=%s",
-        operation.operation_type,
-        wallet_id,
-        operation.amount,
-    )
+async def operate_wallet(wallet_id: UUID, operation: WalletOperation):
     try:
         updated_wallet = await service.process_operation(wallet_id, operation)
         return WalletBalance(
@@ -37,11 +23,7 @@ async def operate_wallet(
 
 
 @router.get("/wallets/{wallet_id}", response_model=WalletBalance)
-async def get_wallet_balance(
-    wallet_id: UUID,
-    service: WalletService = Depends(get_wallet_service),
-):
-    logger.info("Fetching balance for wallet_id='%s'", wallet_id)
+async def get_wallet_balance(wallet_id: UUID):
     wallet = await service.get_balance(wallet_id)
     if not wallet:
         raise HTTPException(status_code=404, detail="Wallet not found")
